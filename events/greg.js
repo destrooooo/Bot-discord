@@ -3,7 +3,14 @@ const { Events } = require("discord.js");
 module.exports = {
   name: Events.MessageCreate,
   execute(message) {
-    const triggerWords = ["Nicolas", "Nico", "Triau"];
+    const triggerWords = [
+      "Gregoire",
+      "Grégoire",
+      "Greg",
+      "grégoire",
+      "gregoire",
+      "greg",
+    ];
 
     if (message.author.bot) return false;
 
@@ -13,8 +20,10 @@ module.exports = {
       }
     });
 
-    if (message.author.id == 142335378064408585) {
-      message.reply("Ta gueule");
+    if (message.author.id == 368057423002599435) {
+      message.reply(
+        "https://tenor.com/view/pacman-nerd-nerd-emoji-nerd-alert-gif-25980639"
+      );
     }
   },
 };
