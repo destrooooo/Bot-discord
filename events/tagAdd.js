@@ -17,7 +17,7 @@ module.exports = {
         const tag = await Tags.create({
           name: tagName,
           description: tagDescription,
-          username: interaction.user.username
+          username: interaction.user.username,
         });
 
         return interaction.reply(`Tag ${tag.name} added.`);
@@ -31,10 +31,10 @@ module.exports = {
     } else if (commandName === "bender_getalltags") {
       // equivalent to: SELECT * FROM tags;
       const tagList = await Tags.findAll({
-        attributes: ["name", "usage_count"]
+        attributes: ["name", "usage_count"],
       });
       const tagString =
-        tagList.map(tag => tag.name + tag.usage_count).join(", ") ||
+        tagList.map((tag) => tag.name + tag.usage_count).join(", ") ||
         "No tags set.";
 
       return interaction.reply(`List of tags: ${tagString}`);
@@ -49,5 +49,5 @@ module.exports = {
         return interaction.reply(`No tag with name ${tagName} found.`);
       }
     }
-  }
+  },
 };

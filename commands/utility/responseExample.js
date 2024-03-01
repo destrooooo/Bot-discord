@@ -14,5 +14,5 @@ module.exports = {
     // await interaction.reply({ content: "Saucisse privée", ephemeral: true });
     // const message = await interaction.fetchReply();
     // console.log(message);
-  }
+  },
 };

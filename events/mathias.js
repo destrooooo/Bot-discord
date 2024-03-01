@@ -35,14 +35,16 @@ module.exports = {
         // ];
 
         // message.reply(gifList[Math.floor(Math.random() * gifList.length)]);
-        message.reply("le nul");
+        message.reply(
+          "https://tenor.com/fr/view/rat-showering-rat-shower-discord-discord-speech-bubble-gif-27671546"
+        );
       }
     });
 
-    if (message.author.id == 277397009286168576) {
-      message.reply(
-        "https://tenor.com/view/nerding-speech-bubble-pepe-nerd-gif-26077806"
-      );
-    }
+    // if (message.author.id == 277397009286168576) {
+    //   message.reply(
+    //     "https://tenor.com/view/nerding-speech-bubble-pepe-nerd-gif-26077806"
+    //   );
+    // }
   },
 };
