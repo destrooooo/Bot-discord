@@ -6,9 +6,12 @@ const {
   Collection,
   GatewayIntentBits,
   ButtonStyle,
+  ActionRowBuilder,
 } = require("discord.js");
 const { token } = require("./config.json");
 const { EmbedBuilder, ButtonBuilder } = require("@discordjs/builders");
+const imageSearch = require("./image_search.js");
+const resultMap = require("./resultMap.js");
 
 // Create a new client to run the bot
 const client = new Client({
@@ -91,11 +94,6 @@ client.on("interactionCreate", async (interaction) => {
             searchResult.resultArray.length
           }`
         )
-        // .spliceFields(0, 1, {
-        //   name: searchResult.currentSearch().title,
-        //   value: searchResult.currentSearch().displayLink,
-        // })
-
         .spliceFields(
           0,
           1,
@@ -104,20 +102,28 @@ client.on("interactionCreate", async (interaction) => {
         )
 
         .setImage(await searchResult.currentSearch().link);
-
-      // Update the "View Original" button to point to the new image
       const actionRow = message.components[0];
-      actionRow.spliceComponents(
-        2,
-        1,
-        new ButtonBuilder()
-          .setLabel("View Original")
-          .setStyle(ButtonStyle.Primary)
-          .setURL(searchResult.currentSearch().image.contextLink)
+      const updatedActionRow = new ActionRowBuilder().addComponents(
+        actionRow.components.map((buttonComponent, index) => {
+          if (index === 2) {
+            const newURL = searchResult.currentSearch().image.contextLink;
+            return new ButtonBuilder()
+              .setStyle(buttonComponent.style) // Copier le style du bouton original
+              .setLabel(buttonComponent.label) // Copier le libellé du bouton original
+              .setURL(newURL); // Mettre à jour l'URL avec la nouvelle URL
+          } else {
+            return buttonComponent; // Retourner le composant de bouton inchangé pour les autres indices
+          }
+        })
       );
 
-      // Edit the original message
-      await interaction.update({ embeds: [newEmbed], components: [actionRow] });
+      // Mettre à jour l'interaction avec le nouveau contenu
+      await interaction.update({
+        embeds: [newEmbed], // Mettre à jour l'embed avec les nouvelles informations
+        components: [updatedActionRow], // Utiliser la nouvelle ActionRow avec le bouton mis à jour
+        fetchReply: true,
+      });
+
       return;
     }
   } catch (error) {

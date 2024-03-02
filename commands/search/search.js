@@ -27,6 +27,10 @@ module.exports = {
   async execute(interaction) {
     const query = interaction.options.getString("input");
     const searchResult = await imageSearch.search(query);
+    searchResult.resultArray.forEach((result, index) => {
+      // console.log(`Image ${index + 1}:`);
+      // console.log(result.image);
+    });
     const url = searchResult.currentSearch().link;
     // Format the search term to replace spaces with %20 for custom search engine URL
     const cseURL = query.replaceAll(" ", "%20");
@@ -54,6 +58,7 @@ module.exports = {
         .setLabel("Next")
         .setStyle(ButtonStyle.Primary),
       new ButtonBuilder()
+        // .setCustomId("original")
         .setLabel("View Original")
         .setStyle(ButtonStyle.Link)
         .setURL(searchResult.currentSearch().image.contextLink)
