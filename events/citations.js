@@ -1,29 +1,29 @@
-// Importation des modules nécessaires à partir de discord.js et initialisation de sqlite3 pour la gestion de la base de données
+// Importing necessary modules from discord.js and initializing sqlite3 for database management
 const { Client, GatewayIntentBits, ChannelType } = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
-const config = require("../config.json"); // Charge la configuration depuis config.json
+const config = require("../config.json"); // Load the configuration from config.json
 
-// Initialisation de la base de données SQLite
+// Initializing the SQLite database with an additional 'posted' column to track message status
 let db = new sqlite3.Database(
   "./messages.db",
   sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
   (err) => {
     if (err) {
-      console.error(err.message); // Affiche les erreurs liées à la connexion à la base de données
+      console.error(`Database connection error: ${err.message}`); // Displays errors related to database connection
     } else {
-      console.log("Connected to the messages database."); // Confirme la connexion réussie à la base de données
-      // Création de la table des messages si elle n'existe pas déjà
+      console.log("Connected to the messages database."); // Confirms successful database connection
+      // Creates the messages table if it does not already exist, including a 'posted' flag
       db.run(
-        "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, content TEXT, authorID TEXT, timestamp TEXT, trigger TEXT)"
+        "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, content TEXT, authorID TEXT, timestamp TEXT, trigger TEXT, posted INTEGER DEFAULT 0)"
       );
     }
   }
 );
 
-// Variables pour stocker les références aux canaux créés
+// Variables to store references to created channels
 let commandChannel, citationChannel;
 
-// Création du bot avec les intents nécessaires
+// Creating the bot with necessary intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -32,188 +32,170 @@ const client = new Client({
   ],
 });
 
-// Gestionnaire d'événements qui s'exécute une fois que le bot est prêt
+// Event handler that runs once the bot is ready
 client.once("ready", async () => {
-  console.log(`Connecté en tant que ${client.user.tag}!`); // Log pour confirmer que le bot est connecté
+  console.log(`Connected as ${client.user.tag}!`); // Log to confirm the bot is connected
 
-  // Récupère la guilde à partir de l'ID spécifié dans config.json
+  // Retrieves the guild from the ID specified in config.json
   const guild = client.guilds.cache.get(config.guildId);
   if (!guild) {
-    console.log("Guild not found"); // Si la guilde n'est pas trouvée, affiche un message d'erreur
+    console.log("Guild not found"); // Displays an error message if the guild is not found
     return;
   }
 
-  // Vérifie l'existence du canal d'explication des commandes ou le crée
-  commandChannel = guild.channels.cache.find(
-    (channel) => channel.name === "explication-commandes"
+  // Checks for the existence of the command explanation channel or creates it
+  commandChannel = await getOrCreateChannel(
+    guild,
+    "explication-commandes",
+    "Channel to explain how to use the bot"
   );
-  if (!commandChannel) {
-    // Crée le canal d'explication des commandes s'il n'existe pas
-    try {
-      commandChannel = await guild.channels.create({
-        name: "explication-commandes",
-        type: ChannelType.GuildText,
-        reason: "Canal pour expliquer comment utiliser le bot",
-      });
-      // Envoie un message initial dans le canal
-      commandChannel.send(
-        "Voici comment vous pouvez utiliser le bot :\n!save <message> pour enregistrer une citation.\n!random pour afficher une citation aléatoire. Pour afficher une citation précise, utiliser le triggerword associé."
-      );
-    } catch (error) {
-      console.error(
-        "Erreur lors de la création du canal d'explication des commandes:",
-        error
-      );
-    }
-  }
-
-  // Vérifie l'existence du canal des citations ou le crée
-  citationChannel = guild.channels.cache.find(
-    (channel) => channel.name === "citations-enregistrées"
+  commandChannel.send(
+    "Here is how you can use the bot:\n!save <message> to save a quote.\n!random to display a random quote.\nTo display a specific quote, use the associated trigger word."
   );
-  if (!citationChannel) {
-    // Crée le canal des citations s'il n'existe pas
-    try {
-      citationChannel = await guild.channels.create({
-        name: "citations-enregistrées",
-        type: ChannelType.GuildText,
-        reason: "Canal pour afficher les citations enregistrées",
-      });
-      // Envoie un message initial dans le canal des citations
-      citationChannel.send("Citations enregistrées :");
-    } catch (error) {
-      console.error(
-        "Erreur lors de la création du canal des citations:",
-        error
-      );
-    }
-  }
 
-  // Affichage des citations enregistrées dans la base de données dans le canal des citations
-  db.all("SELECT content, authorID, trigger FROM messages", [], (err, rows) => {
-    if (err) {
-      console.error("Erreur lors de la récupération des citations:", err);
-      return;
-    }
-    if (rows.length) {
-      // Envoie chaque citation dans le canal des citations
-      rows.forEach((row) => {
-        citationChannel.send(
-          `${row.content} - <@${row.authorID}> (Trigger-word: ${row.trigger})`
-        );
-      });
-    } else {
-      console.log("Aucune citation à envoyer.");
-    }
-  });
+  // Checks for the existence of the quotes channel or creates it
+  citationChannel = await getOrCreateChannel(
+    guild,
+    "citations-enregistrées",
+    "Channel to display saved quotes"
+  );
+
+  // Displaying the saved quotes from the database in the quotes channel if not already posted
+  postUnpostedMessages();
 });
 
-// Gestionnaire d'événements pour la création de messages et les commandes !save et !random
-client.on("messageCreate", async (message) => {
-  if (message.author.bot || !message.guild) return; // Ignore les messages des bots ou en dehors des guildes
-
-  // Commande pour enregistrer un nouveau message
-  if (message.content.startsWith("!save")) {
-    message.channel.send(
-      "Veuillez entrer le texte de la citation que vous souhaitez enregistrer :"
-    );
-
-    const filter = (m) => m.author.id === message.author.id; // Filtre pour ne capter que les messages de l'auteur de la commande
+// Function to get or create a channel by name
+async function getOrCreateChannel(guild, channelName, reason) {
+  let channel = guild.channels.cache.find(
+    (channel) =>
+      channel.name === channelName && channel.type === ChannelType.GuildText
+  );
+  if (!channel) {
     try {
-      // Attend la réponse de l'utilisateur pour le texte de la citation
-      const collectedText = await message.channel.awaitMessages({
-        filter,
-        max: 1,
-        time: 60000,
-        errors: ["time"],
+      channel = await guild.channels.create({
+        name: channelName,
+        type: ChannelType.GuildText,
+        reason: reason,
       });
-      const content = collectedText.first().content;
-
-      // Demande ensuite le trigger word
-      message.channel.send(
-        "Veuillez maintenant entrer le trigger word pour cette citation :"
-      );
-
-      // Attend la réponse de l'utilisateur pour le trigger word
-      const collectedTrigger = await message.channel.awaitMessages({
-        filter,
-        max: 1,
-        time: 60000,
-        errors: ["time"],
-      });
-      const trigger = collectedTrigger.first().content;
-
-      // Insère la citation et le trigger word dans la base de données
-      const authorID = message.author.id;
-      const timestamp = new Date().toISOString();
-      db.run(
-        `INSERT INTO messages(content, authorID, timestamp, trigger) VALUES(?, ?, ?, ?)`,
-        [content, authorID, timestamp, trigger],
-        (err) => {
-          if (err) {
-            message.reply("Erreur lors de l'enregistrement du message.");
-            console.error(`Erreur lors de l'enregistrement : ${err.message}`);
-          } else {
-            message.reply(
-              `Message enregistré avec succès avec le trigger word "${trigger}" !`
-            );
-            // Envoie également la citation enregistrée dans le canal des citations
-            if (citationChannel) {
-              citationChannel.send(
-                `"${content}" - <@${authorID}> (Trigger-word: ${trigger})`
-              );
-            } else {
-              console.log("Le canal des citations n'a pas été trouvé.");
-            }
-          }
-        }
-      );
     } catch (error) {
-      message.channel.send("Temps écoulé, aucun message enregistré.");
+      console.error(`Error while creating the ${channelName} channel:`, error);
     }
-  } else if (message.content === "!random") {
-    // Commande pour afficher une citation aléatoire
-    db.get(
-      "SELECT * FROM messages ORDER BY RANDOM() LIMIT 1",
-      [],
-      (err, row) => {
-        if (err) {
-          console.error(
-            `Erreur lors de la récupération d'un message aléatoire : ${err.message}`
-          );
-          message.reply("Erreur lors de la récupération du message.");
-        } else if (row) {
-          message.channel.send(`${row.content} - <@${row.authorID}>`);
-        } else {
-          message.reply("Aucun message enregistré trouvé.");
-        }
-      }
-    );
   }
-});
+  return channel;
+}
 
-// Un autre gestionnaire d'événements messageCreate pour vérifier les trigger words dans les messages et afficher la citation associée
-client.on("messageCreate", async (message) => {
-  if (message.author.bot || !message.guild) return; // Ignore les messages des bots ou en dehors des guildes
-
-  // Vérifie les triggers pour chaque nouveau message
-  db.all("SELECT content, trigger FROM messages", [], (err, rows) => {
+// Function to post messages that haven't been posted yet
+function postUnpostedMessages() {
+  db.all("SELECT * FROM messages WHERE posted = 0", [], (err, rows) => {
     if (err) {
-      console.error("Erreur lors de la récupération des triggers :", err);
+      console.error("Error retrieving unposted quotes:", err);
       return;
     }
     rows.forEach((row) => {
-      if (message.content.includes(row.trigger)) {
-        message.channel.send(`${row.content} - Déclenché par ${row.trigger}`);
-      }
+      citationChannel
+        .send(
+          `${row.content} - <@${row.authorID}> (Trigger-word: ${row.trigger})`
+        )
+        .then(() => {
+          db.run(
+            "UPDATE messages SET posted = 1 WHERE id = ?",
+            [row.id],
+            (updateErr) => {
+              if (updateErr) {
+                console.error("Error updating the 'posted' flag:", updateErr);
+              }
+            }
+          );
+        })
+        .catch((sendErr) => {
+          console.error(
+            "Error sending message to the quotes channel:",
+            sendErr
+          );
+        });
     });
   });
+}
+
+// Handling message creation, including !save and !random commands
+client.on("messageCreate", async (message) => {
+  if (message.author.bot || !message.guild) return; // Ignores messages from bots or outside guilds
+
+  if (message.content.startsWith("!save")) {
+    handleSaveCommand(message);
+  } else if (message.content === "!random") {
+    displayRandomQuote(message);
+  }
 });
 
-// Gestion des erreurs
+// Function to handle the save command
+async function handleSaveCommand(message) {
+  message.channel.send("Please enter the text of the quote you want to save:");
+
+  const filter = (m) => m.author.id === message.author.id;
+  try {
+    const collectedText = await message.channel.awaitMessages({
+      filter,
+      max: 1,
+      time: 60000,
+      errors: ["time"],
+    });
+    const content = collectedText.first().content;
+
+    message.channel.send("Please now enter the trigger word for this quote:");
+
+    const collectedTrigger = await message.channel.awaitMessages({
+      filter,
+      max: 1,
+      time: 60000,
+      errors: ["time"],
+    });
+    const trigger = collectedTrigger.first().content;
+
+    const authorID = message.author.id;
+    const timestamp = new Date().toISOString();
+
+    db.run(
+      "INSERT INTO messages(content, authorID, timestamp, trigger, posted) VALUES(?, ?, ?, ?, 0)",
+      [content, authorID, timestamp, trigger],
+      (err) => {
+        if (err) {
+          message.reply("Error while saving the message.");
+          console.error(`Error while saving: ${err.message}`);
+        } else {
+          message.reply(
+            `Message successfully saved with the trigger word "${trigger}"!`
+          );
+          // Optionally, immediately post the message to the quotes channel
+          citationChannel.send(
+            `${content} - <@${authorID}> (Trigger-word: ${trigger})`
+          );
+        }
+      }
+    );
+  } catch (error) {
+    message.channel.send("Time expired, no message saved.");
+  }
+}
+
+// Function to display a random quote
+function displayRandomQuote(message) {
+  db.get("SELECT * FROM messages ORDER BY RANDOM() LIMIT 1", [], (err, row) => {
+    if (err) {
+      console.error("Error retrieving a random message:", err.message);
+      message.reply("Error retrieving the message.");
+    } else if (row) {
+      message.channel.send(`${row.content} - <@${row.authorID}>`);
+    } else {
+      message.reply("No saved messages found.");
+    }
+  });
+}
+
+// Error handling
 client.on("error", console.error);
 client.on("warn", console.warn);
 process.on("unhandledRejection", console.error);
 
-// Connexion du bot à Discord avec le token spécifié dans config.json
+// Connecting the bot to Discord with the token specified in config.json
 client.login(config.token);
