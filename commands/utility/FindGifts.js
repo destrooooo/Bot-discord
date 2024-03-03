@@ -3,7 +3,7 @@ const giphy = require("giphy-api")("fw9qFhdRJ4aBx3OqitLCeKSL7C7L4jN0");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("find_gift")
+    .setName("find_gif")
     .setDescription("Recherche un GIF en fonction d'un terme.")
     .addStringOption((option) =>
       option
