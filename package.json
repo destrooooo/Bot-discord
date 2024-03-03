@@ -2,11 +2,16 @@
   "dependencies": {
     "@google-cloud/translate": "^8.1.0",
     "axios": "^1.6.7",
+    "discord-api-types": "^0.37.71",
     "discord.js": "^14.14.1",
+    "dotenv": "^16.4.5",
+    "gaxios": "^6.3.0",
     "giphy-api": "^2.0.2",
     "google-books-search": "^0.3.1",
+    "googleapis": "^133.0.0",
+    "keyv": "^4.5.4",
     "node-fetch": "^3.3.2",
-    "dotenv": "^16.4.5",
+    "request": "^2.88.2",
     "sequelize": "^6.37.1",
     "sqlite3": "^5.1.7"
   }
