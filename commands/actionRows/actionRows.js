@@ -2,26 +2,26 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  SlashCommandBuilder
+  SlashCommandBuilder,
 } = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("bender_row")
     .setDescription("Dunno what it does")
-    .addUserOption(option =>
+    .addUserOption((option) =>
       option
         .setName("target")
         .setDescription("The member to ban")
         .setRequired(true)
     )
-    .addStringOption(option =>
+    .addStringOption((option) =>
       option.setName("reason").setDescription("The reason for banning")
     ),
   async execute(interaction) {
     const target = interaction.options.getUser("target");
     const reason =
-      interaction.options.getString("reason") ?? "No reason provided";
+      interaction.options.getString("reason") ?? "No reason provided"; // à réutiliser
 
     const confirm = new ButtonBuilder()
       .setCustomId("confirm")
@@ -44,7 +44,7 @@ module.exports = {
 
     await interaction.reply({
       content: `Are you sure you want to ban ${target} for reason: ${reason}?`,
-      components: [row]
+      components: [row],
     });
-  }
+  },
 };

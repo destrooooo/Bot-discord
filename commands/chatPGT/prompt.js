@@ -1,5 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
-const { openai } = require("../../openai.js");
+//const { openai } = require("../../openai.js").openai;
+const { complete } = require("../../openai.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -13,15 +14,17 @@ module.exports = {
     ),
   async execute(interaction) {
     try {
-      // Vérifier si interaction.options est défini et si l'option "question" est présente
+      // making sure interaction.options is desfined and if "question" is present
       if (!interaction.options || !interaction.options.getString("question")) {
         return interaction.reply("Please provide a question.");
       }
 
       const question = interaction.options.getString("question");
-
-      // Envoyer la requête à l'API OpenAI
-      const response = await openai.createChatCompletion({
+      console.log(question);
+      // Send the API request to OpenAI
+      const response = await openai.complete({
+        prompt: question,
+        maxTokens: 150,
         model: "gpt-3.5-turbo",
         messages: [
           {
@@ -32,7 +35,7 @@ module.exports = {
         ],
       });
 
-      // Vérifier si une réponse a été renvoyée par l'API
+      // Making sure the Api made a response
       if (
         !response ||
         !response.data ||
@@ -44,13 +47,13 @@ module.exports = {
         );
       }
 
-      // Extraire le contenu de la première option de choix
+      // Get the first response of chatgpt
       const content = response.data.choices[0].message.content;
 
-      // Répondre à l'utilisateur avec le contenu de la réponse
+      // Respond to user with chatgpt answer
       const reply = await interaction.reply(content);
       console.log(content);
-      // Vérifier si la réponse a été correctement envoyée
+      // Making sure the reply have been sucessfully sent
       if (!reply) {
         console.log("Failed to send reply.");
       } else {
@@ -62,3 +65,9 @@ module.exports = {
     }
   },
 };
+
+//const reason =
+//interaction.options.getString("reason") ?? "No reason provided"; // à réutiliser
+
+// .addStringOption(option =>
+//   option.setName("question").setDescription("type ur question here").setRequired(true)

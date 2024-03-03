@@ -1,9 +1,11 @@
-const openai = require("openai");
+const OpenAI = require("openai");
 const { apiKey } = require("./config.json");
-console.log(apiKey);
+
 // Initialisez votre client OpenAI avec votre clé API provenant de config.json
-const openaiClient = new openai.OpenAI({ apiKey });
+const openai = new OpenAI({ apiKey });
 
 module.exports = {
-  openai: openaiClient,
+  complete: async function (params) {
+    return await openai.complete(params);
+  },
 };

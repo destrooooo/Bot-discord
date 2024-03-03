@@ -14,7 +14,7 @@ module.exports = {
     //     .setRequired(true)
     // )
     // .addStringOption(option =>
-    //   option.setName("reason").setDescription("The reason for banning")
+    //   option.setName("question").setDescription("type ur question here").setRequired(true)
     // )
     .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
     .setDMPermission(false)
