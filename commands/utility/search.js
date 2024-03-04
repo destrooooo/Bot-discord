@@ -11,7 +11,7 @@ const resultMap = require("../../resultMap.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName("françois_search")
+    .setName("imag_search")
     .setDescription("Search for an image")
     .addStringOption((option) =>
       option
@@ -21,7 +21,7 @@ module.exports = {
     ),
 
   async runSearch(input) {
-    const query = interaction.options.getString("input");
+    // const query = interaction.options.getString("input");
   },
 
   async execute(interaction) {

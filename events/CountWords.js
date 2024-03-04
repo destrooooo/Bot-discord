@@ -1,21 +1,21 @@
 const { Events, Collection } = require("discord.js");
 
-// Map pour stocker les mots utilisés par chaque utilisateur
+// Map to store the words used by each user
 const userWordCounts = new Collection();
 
 module.exports = {
   name: Events.MessageCreate,
   async execute(message) {
-    // Vérifie si le message provient d'un bot ou s'il ne provient pas d'un serveur (par exemple, message privé)
+    // Checks if the message is from a bot or if it's not from a server (e.g., private message)
     if (message.author.bot || !message.guild) return;
 
-    // Récupère l'utilisateur qui a envoyé le message
+    // Retrieves the user who sent the message
     const user = message.author;
 
-    // Récupère le contenu du message et le divise en mots
+    // Retrieves the content of the message and splits it into words
     const words = message.content.toLowerCase().split(/\s+/);
 
-    // Met à jour le nombre d'occurrences de chaque mot pour l'utilisateur
+    // Updates the count of each word for the user
     words.forEach((word) => {
       if (!userWordCounts.has(user.id)) {
         userWordCounts.set(user.id, new Collection());
@@ -26,7 +26,7 @@ module.exports = {
       userWordCount.set(word, count);
     });
 
-    // Trouve le mot le plus utilisé par l'utilisateur
+    // Finds the most used word by the user
     let mostUsedWord = "";
     let highestCount = 0;
     userWordCounts.get(user.id).forEach((count, word) => {
@@ -38,12 +38,13 @@ module.exports = {
       console.log(highestCount);
     });
 
-    // Envoie le mot le plus utilisé par l'utilisateur dans le canal spécifique
+    // Sends the user's most used word in the specific channel
     if (mostUsedWord !== "") {
       const channel = message.guild.channels.cache.find(
-        (ch) => ch.name === "général"
+        (ch) => ch.name === "general"
       );
-      if (!channel) return console.error("Le canal spécifié est introuvable.");
+      if (!channel)
+        return console.error("The specified channel cannot be found.");
 
       channel.send(
         `${user.username}'s most used word: ${mostUsedWord} (${highestCount} times)`

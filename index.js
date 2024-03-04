@@ -8,6 +8,7 @@ const {
   Events,
   ButtonStyle,
   ActionRowBuilder,
+  ChannelType,
 } = require("discord.js");
 const { token } = require("./config.json");
 const { EmbedBuilder, ButtonBuilder } = require("@discordjs/builders");
@@ -109,19 +110,19 @@ client.on("interactionCreate", async (interaction) => {
           if (index === 2) {
             const newURL = searchResult.currentSearch().image.contextLink;
             return new ButtonBuilder()
-              .setStyle(buttonComponent.style) // Copier le style du bouton original
-              .setLabel(buttonComponent.label) // Copier le libellé du bouton original
-              .setURL(newURL); // Mettre à jour l'URL avec la nouvelle URL
+              .setStyle(buttonComponent.style) // copy button stlyle
+              .setLabel(buttonComponent.label) // copy btn label
+              .setURL(newURL); // update to the new url
           } else {
-            return buttonComponent; // Retourner le composant de bouton inchangé pour les autres indices
+            return buttonComponent; // return btn composant by the newers ones
           }
         })
       );
 
-      // Mettre à jour l'interaction avec le nouveau contenu
+      // update intercation with content
       await interaction.update({
-        embeds: [newEmbed], // Mettre à jour l'embed avec les nouvelles informations
-        components: [updatedActionRow], // Utiliser la nouvelle ActionRow avec le bouton mis à jour
+        embeds: [newEmbed], // update embed infos
+        components: [updatedActionRow], // Use action rows
         fetchReply: true,
       });
 

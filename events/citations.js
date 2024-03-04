@@ -1,18 +1,18 @@
-// Importation des modules nécessaires à partir de discord.js et initialisation de sqlite3 pour la gestion de la base de données
+// Modules importation
 const { Client, GatewayIntentBits, ChannelType } = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
 const config = require("../config.json"); // Charge la configuration depuis config.json
 
-// Initialisation de la base de données SQLite
+// Database init
 let db = new sqlite3.Database(
   "./messages.db",
   sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,
   (err) => {
     if (err) {
-      console.error(err.message); // Affiche les erreurs liées à la connexion à la base de données
+      console.error(err.message); // error recognition
     } else {
-      console.log("Connected to the messages database."); // Confirme la connexion réussie à la base de données
-      // Création de la table des messages si elle n'existe pas déjà
+      console.log("Connected to the messages database."); // connexion test
+      // database creation if doesnt exist alrd
       db.run(
         "CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, content TEXT, authorID TEXT, timestamp TEXT, trigger TEXT)"
       );
@@ -20,10 +20,10 @@ let db = new sqlite3.Database(
   }
 );
 
-// Variables pour stocker les références aux canaux créés
+// variable for channels
 let commandChannel, citationChannel;
 
-// Création du bot avec les intents nécessaires
+// bot creation with specific intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -32,7 +32,7 @@ const client = new Client({
   ],
 });
 
-// Gestionnaire d'événements qui s'exécute une fois que le bot est prêt
+// Event manager
 client.once("ready", async () => {
   console.log(`Connecté en tant que ${client.user.tag}!`); // Log pour confirmer que le bot est connecté
 
@@ -142,7 +142,7 @@ client.on("messageCreate", async (message) => {
         errors: ["time"],
       });
       const trigger = collectedTrigger.first().content;
-
+      console.log(trigger);
       // Insère la citation et le trigger word dans la base de données
       const authorID = message.author.id;
       const timestamp = new Date().toISOString();
